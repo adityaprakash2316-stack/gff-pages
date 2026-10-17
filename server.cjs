@@ -1,96 +1,344 @@
-// Run:  node server.js YOUR_SECRET_PASSWORD
-const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
-const PORT = process.env.PORT || 3000;
-const PASSWORD = process.argv[2] || process.env.ADMIN_PASSWORD;
-if (!PASSWORD || PASSWORD.length < 6) { console.error('Usage: node server.js YOUR_PASSWORD   (at least 6 characters)'); process.exit(1); }
-const PUB = path.join(__dirname, 'public'), UP = path.join(__dirname, 'uploads');
-fs.mkdirSync(UP, { recursive: true });
 
-const MAX = 15 * 1024 * 1024;
-const sessions = new Set();
-const fails = new Map(); // ip -> {n, until}
+'use strict';
 
-function sniff(b) { // real image type from the first bytes
-  if (b.length < 12) return null;
-  if (b[0] === 0xFF && b[1] === 0xD8) return 'jpg';
-  if (b.slice(0, 8).equals(Buffer.from([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A]))) return 'png';
-  if (b.slice(0, 4).toString() === 'RIFF' && b.slice(8, 12).toString() === 'WEBP') return 'webp';
-  if (b.slice(0, 3).toString() === 'GIF') return 'gif';
-  if (b.slice(4, 8).toString() === 'ftyp') return 'heic';
-  return null;
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { v2: cloudinary } = require('cloudinary');
+
+const PORT = Number(process.env.PORT) || 3000;
+const PASSWORD = process.env.ADMIN_PASSWORD;
+const PUB = path.join(__dirname, 'public');
+const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
+const CLOUD_FOLDER = 'gf-pages';
+
+if (!PASSWORD || PASSWORD.length < 12) {
+  console.error('Set ADMIN_PASSWORD to a unique password of at least 12 characters.');
+  process.exit(1);
 }
-const MIME = { jpg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', heic:'image/heic' };
-const ip = req => req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-const cookie = req => Object.fromEntries((req.headers.cookie || '').split(';').map(c => c.trim().split('=')).filter(x => x[0]));
-const authed = req => sessions.has(cookie(req).sid);
-const send = (res, code, body, type = 'text/plain') => { res.writeHead(code, { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' }); res.end(body); };
-const sameHash = (a, b) => { const x = crypto.createHash('sha256').update(a).digest(), y = crypto.createHash('sha256').update(b).digest(); return crypto.timingSafeEqual(x, y); };
+
+if (
+  !process.env.CLOUDINARY_CLOUD_NAME ||
+  !process.env.CLOUDINARY_API_KEY ||
+  !process.env.CLOUDINARY_API_SECRET
+) {
+  console.error('Missing Cloudinary environment variables.');
+  process.exit(1);
+}
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
+
+const sessions = new Map();
+const failedLogins = new Map();
+
+function send(res, status, body, type = 'text/plain; charset=utf-8') {
+  res.writeHead(status, {
+    'Content-Type': type,
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'no-referrer'
+  });
+  res.end(body);
+}
+
+function getCookies(req) {
+  const result = {};
+  for (const part of (req.headers.cookie || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0) result[part.slice(0, i).trim()] = part.slice(i + 1).trim();
+  }
+  return result;
+}
+
+function getSession(req) {
+  const sid = getCookies(req).sid;
+  const session = sid && sessions.get(sid);
+  if (!session) return null;
+  if (session.expires < Date.now()) {
+    sessions.delete(sid);
+    return null;
+  }
+  return session;
+}
+
+function sameHash(a, b) {
+  const x = crypto.createHash('sha256').update(String(a)).digest();
+  const y = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(x, y);
+}
 
 function readBody(req, limit) {
-  return new Promise((ok, bad) => {
-    const parts = []; let n = 0;
-    req.on('data', c => { n += c.length; if (n > limit) { bad(new Error('too big')); req.destroy(); } else parts.push(c); });
-    req.on('end', () => ok(Buffer.concat(parts)));
-    req.on('error', bad);
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    let finished = false;
+
+    req.on('data', chunk => {
+      if (finished) return;
+      size += chunk.length;
+      if (size > limit) {
+        finished = true;
+        reject(new Error('BODY_TOO_LARGE'));
+        req.resume();
+        return;
+      }
+      chunks.push(chunk);
+    });
+
+    req.on('end', () => {
+      if (!finished) resolve(Buffer.concat(chunks));
+    });
+
+    req.on('error', err => {
+      if (!finished) {
+        finished = true;
+        reject(err);
+      }
+    });
   });
 }
 
-http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://x');
-  try {
-    // ----- her page -----
-    if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html'))
-      return send(res, 200, fs.readFileSync(path.join(PUB, 'index.html')), 'text/html; charset=utf-8');
+function detectImageType(buffer) {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8) return 'jpg';
+  if (buffer.subarray(0, 8).equals(Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+  ]))) return 'png';
+  if (
+    buffer.subarray(0, 4).toString() === 'RIFF' &&
+    buffer.subarray(8, 12).toString() === 'WEBP'
+  ) return 'webp';
+  if (buffer.subarray(0, 3).toString() === 'GIF') return 'gif';
+  if (buffer.subarray(4, 8).toString() === 'ftyp') return 'heic';
+  return null;
+}
 
+function uploadToCloudinary(buffer, kind) {
+  return new Promise((resolve, reject) => {
+    const publicId =
+      `${Date.now()}-${kind}-${crypto.randomBytes(6).toString('hex')}`;
+
+    const stream = cloudinary.uploader.upload_stream({
+      folder: CLOUD_FOLDER,
+      public_id: publicId,
+      resource_type: 'image',
+      tags: ['gf-pages', kind]
+    }, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    });
+
+    stream.end(buffer);
+  });
+}
+
+function validPublicId(id) {
+  return typeof id === 'string' &&
+    /^gf-pages\/\d+-(cute|kiss)-[0-9a-f]{12}$/.test(id);
+}
+
+function clientIp(req) {
+  // Use the direct socket address for rate limiting.
+  return req.socket.remoteAddress || 'unknown';
+}
+
+http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+
+  try {
+    // Girlfriend's page
+    if (
+      req.method === 'GET' &&
+      (url.pathname === '/' || url.pathname === '/index.html')
+    ) {
+      return send(
+        res, 200,
+        fs.readFileSync(path.join(PUB, 'index.html')),
+        'text/html; charset=utf-8'
+      );
+    }
+
+    // Receive a photo and store it in Cloudinary.
     if (req.method === 'POST' && url.pathname === '/upload') {
       const kind = url.searchParams.get('kind') === 'kiss' ? 'kiss' : 'cute';
-      const body = await readBody(req, MAX);
-      const ext = sniff(body);
-      if (!ext) return send(res, 400, 'not an image');
-      const name = Date.now() + '-' + kind + '-' + crypto.randomBytes(3).toString('hex') + '.' + ext;
-      fs.writeFileSync(path.join(UP, name), body);
-      console.log('📸 New photo:', name);
+
+      let body;
+      try {
+        body = await readBody(req, MAX_UPLOAD_SIZE);
+      } catch (err) {
+        return send(
+          res,
+          err.message === 'BODY_TOO_LARGE' ? 413 : 400,
+          'Upload too large or invalid.'
+        );
+      }
+
+      if (!detectImageType(body)) {
+        return send(res, 400, 'Unsupported image.');
+      }
+
+      try {
+        const result = await uploadToCloudinary(body, kind);
+        console.log('Photo uploaded:', result.public_id);
+        return send(res, 200, 'ok');
+      } catch (err) {
+        console.error('Cloudinary upload failed:', err.message);
+        return send(res, 502, 'Could not store photo.');
+      }
+    }
+
+    // Admin page itself displays the login form.
+    if (req.method === 'GET' && url.pathname === '/admin') {
+      return send(
+        res, 200,
+        fs.readFileSync(path.join(PUB, 'admin.html')),
+        'text/html; charset=utf-8'
+      );
+    }
+
+    // Admin login
+    if (req.method === 'POST' && url.pathname === '/admin/login') {
+      const ip = clientIp(req);
+      const failure = failedLogins.get(ip) || { count: 0, until: 0 };
+
+      if (failure.until > Date.now()) {
+        return send(res, 429, 'locked');
+      }
+
+      let supplied = '';
+      try {
+        supplied = JSON.parse(
+          (await readBody(req, 2000)).toString()
+        ).password || '';
+      } catch {
+        return send(res, 400, 'Invalid request.');
+      }
+
+      if (!sameHash(supplied, PASSWORD)) {
+        failure.count++;
+        if (failure.count >= 5) {
+          failure.count = 0;
+          failure.until = Date.now() + 10 * 60 * 1000;
+        }
+        failedLogins.set(ip, failure);
+        return send(res, 401, 'Incorrect password.');
+      }
+
+      failedLogins.delete(ip);
+      const sid = crypto.randomBytes(32).toString('hex');
+      sessions.set(sid, { expires: Date.now() + 24 * 60 * 60 * 1000 });
+
+      const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+      res.setHeader(
+        'Set-Cookie',
+        `sid=${sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${secure}`
+      );
       return send(res, 200, 'ok');
     }
 
-    // ----- admin (only you) -----
-    if (url.pathname === '/admin' && req.method === 'GET')
-      return send(res, 200, fs.readFileSync(path.join(PUB, 'admin.html')), 'text/html; charset=utf-8');
-
-    if (url.pathname === '/admin/login' && req.method === 'POST') {
-      const f = fails.get(ip(req)) || { n: 0, until: 0 };
-      if (f.until > Date.now()) return send(res, 429, 'locked');
-      let pw = ''; try { pw = JSON.parse((await readBody(req, 2000)).toString()).password || ''; } catch {}
-      if (!sameHash(pw, PASSWORD)) { f.n++; if (f.n >= 5) { f.until = Date.now() + 10 * 60000; f.n = 0; } fails.set(ip(req), f); return send(res, 401, 'no'); }
-      fails.delete(ip(req));
-      const sid = crypto.randomBytes(24).toString('hex'); sessions.add(sid);
-      res.setHeader('Set-Cookie', 'sid=' + sid + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000');
+    // Logout
+    if (req.method === 'POST' && url.pathname === '/admin/logout') {
+      const sid = getCookies(req).sid;
+      if (sid) sessions.delete(sid);
+      const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+      res.setHeader(
+        'Set-Cookie',
+        `sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`
+      );
       return send(res, 200, 'ok');
     }
-    if (url.pathname === '/admin/logout' && req.method === 'POST') { sessions.delete(cookie(req).sid); return send(res, 200, 'ok'); }
 
+    // All remaining /admin/* endpoints require a valid session.
     if (url.pathname.startsWith('/admin/')) {
-      if (!authed(req)) return send(res, 401, 'login required');
-      if (url.pathname === '/admin/list') {
-        const files = fs.readdirSync(UP).filter(n => /^\d+-(cute|kiss)-[0-9a-f]+\.\w+$/.test(n)).sort().reverse()
-          .map(n => ({ name: n, kind: n.split('-')[1], time: Number(n.split('-')[0]) }));
-        return send(res, 200, JSON.stringify(files), 'application/json');
+      if (!getSession(req)) return send(res, 401, 'login required');
+
+      // List photos
+      if (req.method === 'GET' && url.pathname === '/admin/list') {
+        const result = await cloudinary.api.resources({
+          type: 'upload',
+          prefix: `${CLOUD_FOLDER}/`,
+          max_results: 500,
+          resource_type: 'image'
+        });
+
+        const files = (result.resources || [])
+          .filter(item => validPublicId(item.public_id))
+          .map(item => {
+            const match = item.public_id.match(
+              /^gf-pages\/(\d+)-(cute|kiss)-[0-9a-f]{12}$/
+            );
+            return {
+              name: item.public_id,
+              kind: match[2],
+              time: Number(match[1])
+            };
+          })
+          .sort((a, b) => b.time - a.time);
+
+        return send(
+          res, 200, JSON.stringify(files),
+          'application/json; charset=utf-8'
+        );
       }
-      if (url.pathname.startsWith('/admin/img/')) {
-        const n = path.basename(decodeURIComponent(url.pathname.slice(11)));
-        if (!/^\d+-(cute|kiss)-[0-9a-f]+\.\w+$/.test(n) || !fs.existsSync(path.join(UP, n))) return send(res, 404, 'nope');
-        return send(res, 200, fs.readFileSync(path.join(UP, n)), MIME[n.split('.').pop()] || 'application/octet-stream');
+
+      // Return a photo URL only after authentication.
+      if (req.method === 'GET' && url.pathname.startsWith('/admin/img/')) {
+        const publicId = decodeURIComponent(
+          url.pathname.slice('/admin/img/'.length)
+        );
+
+        if (!validPublicId(publicId)) return send(res, 404, 'Not found.');
+
+        const result = await cloudinary.api.resource(publicId, {
+          resource_type: 'image'
+        });
+
+        res.writeHead(302, {
+          Location: result.secure_url,
+          'Cache-Control': 'no-store',
+          'Referrer-Policy': 'no-referrer'
+        });
+        return res.end();
       }
-      if (url.pathname === '/admin/delete' && req.method === 'POST') {
-        const n = path.basename(url.searchParams.get('name') || '');
-        if (/^\d+-(cute|kiss)-[0-9a-f]+\.\w+$/.test(n) && fs.existsSync(path.join(UP, n))) fs.unlinkSync(path.join(UP, n));
+
+      // Delete photo from Cloudinary
+      if (req.method === 'POST' && url.pathname === '/admin/delete') {
+        let publicId = '';
+        try {
+          publicId = new URLSearchParams(
+            (await readBody(req, 2000)).toString()
+          ).get('name') || '';
+        } catch {
+          return send(res, 400, 'Invalid request.');
+        }
+
+        if (!validPublicId(publicId)) {
+          return send(res, 400, 'Invalid photo.');
+        }
+
+        const result = await cloudinary.uploader.destroy(publicId, {
+          resource_type: 'image',
+          invalidate: true
+        });
+
+        if (result.result !== 'ok' && result.result !== 'not found') {
+          return send(res, 502, 'Could not delete photo.');
+        }
         return send(res, 200, 'ok');
       }
     }
-    send(res, 404, 'Not found');
-  } catch (e) { send(res, 500, 'error'); }
-}).listen(PORT, () => {
-  console.log('\n💌 Running!');
-  console.log('   Her page : http://localhost:' + PORT + '/');
-  console.log('   Your page: http://localhost:' + PORT + '/admin   (password protected)\n');
+
+    return send(res, 404, 'Not found.');
+  } catch (err) {
+    console.error('Request failed:', err.message);
+    return send(res, 500, 'Server error.');
+  }
+}).listen(PORT, '0.0.0.0', () => {
+  console.log(`GF Pages running on port ${PORT}`);
 });
