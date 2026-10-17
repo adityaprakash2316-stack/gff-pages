@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin – Her pictures 💌</title>
+<style>
+:root{--bg:#fff0f6;--card:#fff;--text:#5a1838;--accent:#ff4d8d;--muted:#a05a7d}
+@media (prefers-color-scheme:dark){:root{--bg:#22091a;--card:#341126;--text:#ffd9e8;--muted:#e9a6c4}}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--text);padding:20px}
+h1{margin:0 0 4px}.sub{color:var(--muted);margin-bottom:18px}
+.login{max-width:340px;margin:12vh auto;background:var(--card);padding:26px;border-radius:20px;text-align:center}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;font-size:16px;margin:12px 0}
+button{background:var(--accent);color:#fff;border:0;border-radius:50px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:15px}
+button.sm{padding:6px 14px;font-size:13px}button.gray{background:#8884}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.item{background:var(--card);border-radius:16px;padding:10px;text-align:center}
+.item img{width:100%;height:210px;object-fit:cover;border-radius:12px;cursor:pointer}
+.tag{display:inline-block;font-size:12px;background:var(--accent);color:#fff;border-radius:20px;padding:2px 10px;margin:8px 0 2px}
+.time{font-size:12px;color:var(--muted);margin-bottom:8px}
+#big{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:9}
+#big img{max-width:95vw;max-height:92vh;border-radius:12px}
+.err{color:#d33;min-height:20px}
+</style></head><body>
+<div id="app"></div>
+<div id="big" onclick="this.style.display='none'"><img id="bigimg" alt=""></div>
+<script>
+const app = document.getElementById('app');
+function loginView(msg){
+  app.innerHTML = '<div class="login"><div style="font-size:48px">🔒</div><h2>Admin</h2><input id="pw" type="password" placeholder="Password" autofocus><div class="err" id="err"></div><button id="go">Open</button></div>';
+  const err = document.getElementById('err'); err.textContent = msg || '';
+  const go = async () => {
+    const r = await fetch('/admin/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password: document.getElementById('pw').value})});
+    if (r.ok) load(); else err.textContent = r.status === 429 ? 'Too many tries. Wait 10 minutes.' : 'Wrong password';
+  };
+  document.getElementById('go').onclick = go;
+  document.getElementById('pw').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+async function load(){
+  const r = await fetch('/admin/list');
+  if (r.status === 401) return loginView();
+  const files = await r.json();
+  let h = '<h1>Her pictures 💌</h1><div class="sub">' + files.length + ' photo(s) · refreshes every 10 seconds · <button class="sm gray" id="out">Log out</button></div><div class="grid">';
+  for (const f of files) {
+    const url = '/admin/img/' + encodeURIComponent(f.name);
+    h += '<div class="item"><img src="' + url + '" data-u="' + url + '" alt=""><div class="tag">' + (f.kind === 'kiss' ? '😘 Kiss pic' : '🥰 Cute pic') + '</div><div class="time">' + new Date(f.time).toLocaleString() + '</div>' +
+         '<a href="' + url + '" download="' + f.name + '"><button class="sm">Download</button></a> <button class="sm gray" data-del="' + f.name + '">Delete</button></div>';
+  }
+  if (!files.length) h += '<p>No photos yet. Waiting for her… 🥺</p>';
+  app.innerHTML = h + '</div>';
+  app.querySelectorAll('img').forEach(i => i.onclick = () => { document.getElementById('bigimg').src = i.dataset.u; document.getElementById('big').style.display = 'flex'; });
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (confirm('Delete this photo?')) { await fetch('/admin/delete?name=' + encodeURIComponent(b.dataset.del), {method:'POST'}); load(); } });
+  document.getElementById('out').onclick = async () => { await fetch('/admin/logout', {method:'POST'}); loginView(); };
+}
+load(); setInterval(() => { if (document.getElementById('big').style.display !== 'flex' && !document.getElementById('pw')) load(); }, 10000);
+</script></body></html>

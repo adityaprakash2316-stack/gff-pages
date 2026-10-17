@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I miss you ❤️</title>
+<style>
+:root{--bg1:#ffd1e3;--bg2:#ffb3d1;--card:#ffffff;--text:#6b1d45;--accent:#ff4d8d;--accent2:#e0356f;--muted:#a05a7d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#3a1028;--bg2:#5a1a3d;--card:#2b0f20;--text:#ffd9e8;--accent:#ff4d8d;--accent2:#e0356f;--muted:#e9a6c4}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card{background:var(--card);border-radius:28px;padding:32px 24px;width:min(92vw,420px);text-align:center;box-shadow:0 20px 50px rgba(255,77,141,.3);position:relative;z-index:2}
+.emoji{font-size:64px;animation:beat 1.2s infinite}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+h1{font-size:28px;margin:12px 0 6px}
+p{color:var(--muted);margin:0 0 22px;font-size:17px}
+.btns{display:flex;gap:16px;justify-content:center;align-items:center;min-height:64px}
+button{font-size:18px;font-weight:700;border:none;border-radius:50px;padding:14px 30px;cursor:pointer;font-family:inherit}
+.yes{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 8px 20px rgba(255,77,141,.45);transition:transform .2s}
+.yes:active{transform:scale(.95)}
+.no{background:#e9e9ef;color:#555;transition:left .25s,top .25s}
+.screen{display:none}.screen.on{display:block}
+.pick{display:inline-block;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:14px 28px;border-radius:50px;font-weight:700;cursor:pointer;margin-bottom:14px}
+#preview{max-width:100%;max-height:240px;border-radius:18px;margin:10px auto;display:none;border:4px solid var(--accent)}
+button[disabled]{opacity:.4;cursor:not-allowed}
+.heart{position:fixed;bottom:-40px;font-size:24px;opacity:.7;animation:rise linear forwards;z-index:1;pointer-events:none}
+@keyframes rise{to{transform:translateY(-110vh) rotate(30deg);opacity:0}}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="screen on" id="s1">
+    <div class="emoji">🥺</div>
+    <h1 id="t1">I miss you so much ❤️</h1>
+    <p>Do you miss me too?</p>
+    <div class="btns"><button class="yes" id="y1">Yes 💕</button><button class="no" id="n1">No</button></div>
+  </div>
+
+  <div class="screen" id="s2">
+    <div class="emoji" id="e2">📸</div>
+    <h1 id="t2">Then send me your cute pic 😍</h1>
+    <p id="p2">Will you send it to me?</p>
+    <div class="btns"><button class="yes" id="y2">Yes 💕</button><button class="no" id="n2">No</button></div>
+  </div>
+
+  <div class="screen" id="s3">
+    <div class="emoji" id="e3">🥰</div>
+    <h1 id="t3">Attach your cute pic</h1>
+    <p>Choose it, then press send 💌</p>
+    <label class="pick" for="file">📷 Choose photo</label>
+    <input type="file" id="file" accept="image/*" hidden>
+    <img id="preview" alt="Your photo">
+    <div><button class="yes" id="send" disabled>Send to me 💌</button></div>
+  </div>
+
+  <div class="screen" id="s4">
+    <div class="emoji">💖</div>
+    <h1>Thank you, my love!</h1>
+    <p>You made my day 😘 You can close this page now.</p>
+  </div>
+
+</div>
+
+<script>
+const HER_NAME = "";   // her name (optional)
+if (HER_NAME) document.getElementById('t1').textContent = HER_NAME + ', I miss you so much ❤️';
+
+const $ = id => document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on')}
+
+// The "No" button runs away everywhere
+function dodge(btn){
+  const w = btn.offsetWidth, h = btn.offsetHeight;
+  btn.style.position = 'fixed';
+  btn.style.zIndex = 5;
+  btn.style.left = Math.max(8, Math.random()*(innerWidth - w - 16)) + 'px';
+  btn.style.top  = Math.max(8, Math.random()*(innerHeight - h - 16)) + 'px';
+}
+function makeRunaway(btn, yes){
+  const run = e => { e.preventDefault(); e.stopPropagation(); dodge(btn); yes.style.transform = 'scale(' + (1 + Math.random()*0.15) + ')'; };
+  ['mouseenter','mouseover','pointerdown','touchstart','click','focus'].forEach(ev => btn.addEventListener(ev, run, {passive:false}));
+}
+makeRunaway($('n1'), $('y1'));
+makeRunaway($('n2'), $('y2'));
+
+// Two rounds: normal pic, then kiss pic
+const rounds = [
+  {e:'📸', t:'Then send me your cute pic 😍', p:'Will you send it to me?', t3:'Attach your cute pic', e3:'🥰'},
+  {e:'😘', t:'One more pic, please… while giving a kiss 💋', p:'Will you send me a kiss pic?', t3:'Attach your kiss pic', e3:'💋'}
+];
+let round = 0, photo = null, locked = false;
+
+function openAsk(){
+  const r = rounds[round];
+  $('e2').textContent = r.e; $('t2').textContent = r.t; $('p2').textContent = r.p;
+  const n = $('n2');
+  n.removeAttribute('style'); n.style.display = '';   // bring "No" back (it will run away again)
+  $('y2').style.transform = '';
+  show('s2');
+}
+$('y1').onclick = () => { $('n1').style.display='none'; round = 0; openAsk(); };
+$('y2').onclick = () => {
+  $('n2').style.display='none';
+  const r = rounds[round];
+  $('e3').textContent = r.e3; $('t3').textContent = r.t3;
+  photo = null; $('file').value = ''; $('preview').style.display='none'; $('send').disabled = true;
+  locked = true; show('s3');
+};
+
+$('file').onchange = e => {
+  photo = e.target.files[0];
+  if (!photo) return;
+  $('preview').src = URL.createObjectURL(photo);
+  $('preview').style.display = 'block';
+  $('send').disabled = false;
+};
+
+// Page cannot be left until the photos are sent
+addEventListener('beforeunload', e => { if (locked) { e.preventDefault(); e.returnValue = ''; } });
+
+// Shrink big phone photos before upload (faster), fall back to the original file
+function shrink(file){
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1600, r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => res(b || file), 'image/jpeg', 0.88);
+    };
+    img.onerror = () => res(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+$('send').onclick = async () => {
+  if (!photo) return;
+  const btn = $('send'); btn.disabled = true; btn.textContent = 'Sending… 💌';
+  try {
+    const blob = await shrink(photo);
+    const r = await fetch('/upload?kind=' + (round === 0 ? 'cute' : 'kiss'), {
+      method: 'POST', headers: {'Content-Type': blob.type || 'image/jpeg'}, body: blob
+    });
+    if (!r.ok) throw new Error('upload failed');
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Send to me 💌';
+    alert('Photo did not send 🥺 Please try again.');
+    return;
+  }
+  btn.textContent = 'Send to me 💌';
+  round++;
+  if (round < rounds.length) { openAsk(); }
+  else { locked = false; show('s4'); setTimeout(() => window.close(), 2500); }
+};
+
+// floating hearts
+setInterval(() => {
+  const h = document.createElement('div');
+  h.className = 'heart';
+  h.textContent = ['❤️','💕','💖','💗'][Math.floor(Math.random()*4)];
+  h.style.left = Math.random()*100 + 'vw';
+  h.style.animationDuration = (5 + Math.random()*5) + 's';
+  document.body.appendChild(h);
+  setTimeout(() => h.remove(), 10000);
+}, 600);
+</script>
+</body>
+</html>
