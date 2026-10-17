@@ -91,7 +91,7 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
       <button class="primary" id="yesBtn" type="button">Yes ❤️</button>
       <button class="secondary" id="noBtn" type="button">No 🙈</button>
     </div>
-    <p class="small">Psst… try catching the "No" button 😉</p>
+    <p class="small">Psst… try catching the “No” button 😉</p>
   </section>
 
   <nav class="nav" id="mainNav" aria-label="Website sections" hidden>
@@ -174,7 +174,7 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
         <textarea id="shareText" class="result" rows="7" aria-label="Shareable love note"></textarea>
         <div class="actions" style="margin-top:12px">
           <button class="primary" id="copyResult">Copy my love note</button>
-          <button class="secondary" id="whatsappShare">Share on WhatsApp</button>
+          <button class="secondary" id="whatsappShare">Send to Admin 💌</button>
           <button class="secondary" id="playAgain">Play again 🔄</button>
         </div>
         <p class="small" id="shareStatus" role="status"></p>
@@ -230,6 +230,7 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
         <textarea id="kissShare" class="result" rows="7" aria-label="Your confession note"></textarea>
         <div class="actions" style="margin-top:12px">
           <button class="primary" id="kissCopy">Copy note</button>
+          <button class="secondary" id="kissSendAdmin">Send to Admin 💌</button>
           <button class="secondary" id="kissAgain">Play again 🔄</button>
         </div>
         <p id="kissShareStatus" class="small" role="status"></p>
@@ -269,7 +270,7 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
       <div id="photoAnswerArea" aria-label="Photo step choice">
         <button class="secondary photo-no" id="photoNoBtn" type="button">No 🙈</button>
       </div>
-      <p class="small" id="photoNoHint">Psst… try catching the "No" button 😉</p>
+      <p class="small" id="photoNoHint">Psst… try catching the “No” button 😉</p>
       <p class="notice" style="text-align:left;margin-top:20px">To continue, upload a photo you are comfortable sharing. Photos are stored as publicly accessible Cloudinary image assets, so do not upload anything private or intimate. You can always leave the page instead.</p>
     </div>
   </section>
@@ -354,7 +355,7 @@ const cards = {
     ['truth','🌹','Describe your perfect date together in three details.'],
     ['truth','🥰','Which memory of you two would you happily relive?'],
     ['dare','🎤','Send your partner a short voice note saying three things you adore about them.'],
-    ['dare','💞','Write a one-sentence love note without using the word "love."'],
+    ['dare','💞','Write a one-sentence love note without using the word “love.”'],
     ['dare','🎶','Choose a song that reminds you of your partner and tell them why.'],
     ['fantasy','🌙','Imagine one whole evening together with no plans. What would you do first?'],
     ['fantasy','🏡','Describe your dream lazy Sunday together.'],
@@ -384,7 +385,7 @@ const cards = {
     ['dare','🌹','Suggest an affectionate activity and ask if your partner would enjoy it too.'],
     ['fantasy','🕯️','Imagine a private, candlelit date where you both feel safe, confident, and wanted.'],
     ['fantasy','❤️‍🔥','Describe a slow-burn romantic moment using atmosphere, words, and chemistry.'],
-    ['fantasy','💗','Plan a romantic surprise with your partner\'s enthusiastic agreement.']
+    ['fantasy','💗','Plan a romantic surprise with your partner’s enthusiastic agreement.']
   ]
 };
 
@@ -467,8 +468,8 @@ $('copyResult').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText($('shareText').value);$('shareStatus').textContent='Copied! Paste it into your chat.';}
   catch{$('shareText').focus();$('shareText').select();$('shareStatus').textContent='Select and copy the message manually.';}
 });
-$('whatsappShare').addEventListener('click',()=>{
-  window.open('https://wa.me/?text='+encodeURIComponent($('shareText').value),'_blank','noopener,noreferrer');
+$('whatsappShare').addEventListener('click', async () => {
+  await sendGameNoteToAdmin($('shareText').value, 'shareStatus', $('whatsappShare'));
 });
 
 // KISS OR CONFESS
@@ -554,9 +555,40 @@ $('kissAgain').addEventListener('click',()=>{
   $('kissResults').hidden=true;$('kissArea').hidden=true;$('kissError').textContent='';
 });
 $('kissCopy').addEventListener('click',async()=>{
-  try{await navigator.clipboard.writeText($('kissShare').value);$('kissShareStatus').textContent='Copied! Paste it into your chat.';}
+  try{await navigator.clipboard.writeText($('kissShare').value);$('kissShareStatus').textContent='Copied!';}
   catch{$('kissShare').focus();$('kissShare').select();$('kissShareStatus').textContent='Select and copy the note manually.';}
 });
+$('kissSendAdmin').addEventListener('click', async () => {
+  await sendGameNoteToAdmin($('kissShare').value, 'kissShareStatus', $('kissSendAdmin'));
+});
+
+// Send completed game notes directly to the admin inbox, never to WhatsApp.
+async function sendGameNoteToAdmin(message, statusId, button) {
+  const status = $(statusId);
+  const name = $('confessionName') ? $('confessionName').value.trim() : '';
+  if (!message.trim()) { status.textContent = 'Please write a message first.'; return; }
+  if (message.trim().length > 2000) { status.textContent = 'Please shorten the message to 2000 characters or fewer.'; return; }
+  button.disabled = true;
+  const oldText = button.textContent;
+  button.textContent = 'Sending… 💌';
+  status.textContent = 'Sending to the admin inbox…';
+  try {
+    const response = await fetch('/confess', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, message: message.trim()})
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Message could not be sent. Please try again.');
+    status.textContent = 'Sent to the admin inbox successfully 💗';
+    button.textContent = 'Sent 💌';
+  } catch (error) {
+    status.textContent = error.message || 'Unable to send message. Please try again.';
+    button.textContent = oldText;
+  } finally {
+    button.disabled = false;
+  }
+}
 
 // Send confessions to the site's authenticated admin inbox (not WhatsApp).
 $('confessionForm').addEventListener('submit', async event => {
