@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +33,10 @@ header{display:flex;justify-content:space-between;align-items:center;gap:12px;ma
 .pill{color:var(--muted);font-size:12px;border:1px solid var(--border);border-radius:99px;padding:7px 10px}
 .hero,.panel{background:linear-gradient(145deg,#3c142b,#2b0c1e);border:1px solid var(--border);border-radius:25px;padding:24px;box-shadow:0 20px 60px #0003}
 .hero{text-align:center;padding:34px 22px}
+#answerArea{position:relative;min-height:76px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:20px}
+#noBtn{position:relative;transition:left .12s ease,top .12s ease;touch-action:manipulation}
+#photoAnswerArea{position:relative;min-height:68px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:16px}
+.photo-no{position:relative;transition:left .12s ease,top .12s ease;touch-action:manipulation}
 .hero-emoji{font-size:60px}
 h1{font-size:clamp(28px,6vw,44px);line-height:1.1;margin:8px 0 12px}
 h2{margin:0 0 12px;font-size:24px}
@@ -80,24 +83,36 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
     <div class="pill">A little love, just for you</div>
   </header>
 
-  <section class="hero" id="home">
-    <div class="hero-emoji">❤️‍🔥</div>
-    <h1>Hey, beautiful.</h1>
-    <p>This little corner of the internet is for us: smiles, flirting, and memories worth keeping.</p>
-    <div class="actions">
-      <button class="primary" onclick="showView('game')">Truth, Dare or Fantasy 💋</button>
-      <button class="secondary" onclick="showView('kissGame')">Kiss or Confess ❤️‍🔥</button>
-      <button class="secondary" onclick="showView('photos')">Send a photo 📸</button>
+  <section class="hero view active" id="home">
+    <div class="hero-emoji">🥺❤️</div>
+    <h1>Are you missing me?</h1>
+    <p>Tell me honestly… are you missing me right now? 💗</p>
+    <div id="answerArea">
+      <button class="primary" id="yesBtn" type="button">Yes ❤️</button>
+      <button class="secondary" id="noBtn" type="button">No 🙈</button>
     </div>
-    <p class="small">Made with love. Play only what feels comfortable. You can skip anything.</p>
+    <p class="small">Psst… try catching the "No" button 😉</p>
   </section>
 
-  <nav class="nav" aria-label="Website sections">
-    <button class="secondary" onclick="showView('home')">🏠 Home</button>
+  <nav class="nav" id="mainNav" aria-label="Website sections" hidden>
+    <button class="secondary" onclick="showView('gamesHome')">🏠 Games</button>
     <button class="secondary" onclick="showView('game')">💋 Truth, Dare or Fantasy</button>
     <button class="secondary" onclick="showView('kissGame')">❤️‍🔥 Kiss or Confess</button>
-    <button class="secondary" onclick="showView('photos')">📸 Photo corner</button>
+    <button class="secondary" onclick="startPhotoCorner()">📸 Photo corner</button>
   </nav>
+
+  <section class="view" id="gamesHome">
+    <div class="hero">
+      <div class="hero-emoji">💋🎲</div>
+      <h1>Now, let's play ❤️‍🔥</h1>
+      <p>You made it! Choose a game, flirt, confess, and skip anything that doesn't feel right.</p>
+      <div class="grid">
+        <button class="tile" onclick="showView('game')"><div class="big">💋</div><strong>Truth, Dare or Fantasy</strong><span>Romantic questions, playful dares, and fantasies.</span></button>
+        <button class="tile" onclick="showView('kissGame')"><div class="big">❤️‍🔥</div><strong>Kiss or Confess</strong><span>Choose a kiss challenge or send a confession directly to the admin inbox.</span></button>
+      </div>
+      <p class="small">Made with love. You can skip or stop at any time.</p>
+    </div>
+  </section>
 
   <!-- GAME ONE -->
   <section class="view" id="game">
@@ -215,29 +230,31 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
         <textarea id="kissShare" class="result" rows="7" aria-label="Your confession note"></textarea>
         <div class="actions" style="margin-top:12px">
           <button class="primary" id="kissCopy">Copy note</button>
-          <button class="secondary" id="kissWhatsApp">Share on WhatsApp</button>
           <button class="secondary" id="kissAgain">Play again 🔄</button>
         </div>
         <p id="kissShareStatus" class="small" role="status"></p>
       </div>
     </div>
+      <div class="panel" style="margin-top:18px;background:#ffffff08;box-shadow:none">
+        <h3>Send a confession directly 💌</h3>
+        <p class="small">Your message goes to the private admin inbox on this website, not WhatsApp. Only send something you are comfortable sharing.</p>
+        <form id="confessionForm">
+          <label for="confessionName">Your name or nickname (optional)</label>
+          <input id="confessionName" type="text" maxlength="50" placeholder="Your nickname">
+          <label for="confessionMessage">Your message</label>
+          <textarea id="confessionMessage" rows="4" maxlength="2000" required placeholder="Write your confession here…"></textarea>
+          <div class="actions" style="margin-top:12px"><button class="primary" id="sendConfession" type="submit">Send privately 💌</button></div>
+          <p id="confessionStatus" class="small" role="status" aria-live="polite"></p>
+        </form>
+      </div>
   </section>
 
   <!-- PHOTO UPLOAD -->
   <section class="view" id="photos">
     <div class="panel upload-box">
-      <h2>Our photo corner 📸</h2>
-      <p>Send a cute photo or a kiss-themed selfie if you feel like it. Nothing here is compulsory.</p>
-      <div class="grid">
-        <button class="tile" onclick="chooseKind('cute')">
-          <div class="big">🥰</div><strong>Cute photo</strong>
-          <span>A smile, a selfie, or a favorite memory.</span>
-        </button>
-        <button class="tile" onclick="chooseKind('kiss')">
-          <div class="big">😘</div><strong>Kiss-themed photo</strong>
-          <span>A kissy face or sweet, playful selfie—only if you want.</span>
-        </button>
-      </div>
+      <div class="hero-emoji" id="stepEmoji">🥰</div>
+      <h2 id="stepHeading">Send your cute pic 🥰</h2>
+      <p id="stepDescription">Send your cute selfie to unlock the next step. Upload only a photo you are comfortable sharing.</p>
       <div id="uploadArea" hidden style="margin-top:22px">
         <h3 id="uploadTitle">Choose a photo</h3>
         <label for="file">Select an image from your device</label>
@@ -245,11 +262,15 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
         <img id="preview" alt="Selected photo preview">
         <div class="actions">
           <button class="primary" id="send" disabled>Send photo 💌</button>
-          <button class="secondary" id="cancelUpload">Cancel</button>
+          <button class="secondary" id="cancelUpload">Clear photo</button>
         </div>
         <p id="uploadStatus" role="status" aria-live="polite"></p>
       </div>
-      <div class="notice" style="text-align:left;margin-top:20px">Photos are uploaded to Cloudinary. The current server stores them as publicly accessible image assets, so don't upload anything you need to keep private.</div>
+      <div id="photoAnswerArea" aria-label="Photo step choice">
+        <button class="secondary photo-no" id="photoNoBtn" type="button">No 🙈</button>
+      </div>
+      <p class="small" id="photoNoHint">Psst… try catching the "No" button 😉</p>
+      <p class="notice" style="text-align:left;margin-top:20px">To continue, upload a photo you are comfortable sharing. Photos are stored as publicly accessible Cloudinary image assets, so do not upload anything private or intimate. You can always leave the page instead.</p>
     </div>
   </section>
 
@@ -259,7 +280,7 @@ footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
-const viewIds = ['home','game','kissGame','photos'];
+const viewIds = ['home','gamesHome','game','kissGame','photos'];
 
 function showView(name) {
   viewIds.forEach(id => $(id).classList.toggle('active',id===name));
@@ -268,6 +289,64 @@ function showView(name) {
 }
 showView('home');
 
+// Guided flow: missing-you question -> cute photo -> kiss photo -> games.
+let photoStep = 'cute';
+const noButton = $('noBtn');
+function moveNoButton() {
+  const area = $('answerArea');
+  const maxX = Math.max(0, area.clientWidth - noButton.offsetWidth);
+  const maxY = 36;
+  noButton.style.position = 'absolute';
+  noButton.style.left = Math.floor(Math.random() * (maxX + 1)) + 'px';
+  noButton.style.top = Math.floor(Math.random() * (maxY + 1)) + 'px';
+}
+noButton.addEventListener('pointerenter', moveNoButton);
+noButton.addEventListener('pointerdown', event => { event.preventDefault(); moveNoButton(); });
+noButton.addEventListener('click', event => { event.preventDefault(); moveNoButton(); });
+$('yesBtn').addEventListener('click', () => {
+  $('mainNav').hidden = true;
+  photoStep = 'cute';
+  chooseKind('cute');
+  showView('photos');
+});
+function setPhotoStep(kind) {
+  photoStep = kind;
+  chooseKind(kind);
+  $('stepEmoji').textContent = kind === 'cute' ? '🥰' : '😘';
+  $('stepHeading').textContent = kind === 'cute' ? 'Send your cute pic 🥰' : 'Send one kiss-giving pic 😘';
+  $('stepDescription').textContent = kind === 'cute'
+    ? 'Upload your cute pic to unlock the kiss-pic step.'
+    : 'Upload your kiss-giving pic to unlock the games.';
+  $('send').textContent = kind === 'cute' ? 'Send cute pic 💌' : 'Send kiss pic 💋';
+  $('uploadStatus').textContent = '';
+  $('photoNoBtn').style.position = 'relative';
+  $('photoNoBtn').style.left = '0px';
+  $('photoNoBtn').style.top = '0px';
+}
+function startPhotoCorner() {
+  $('mainNav').hidden = false;
+  setPhotoStep('cute');
+  showView('photos');
+}
+function finishPhotoFlow() {
+  $('uploadArea').hidden = true;
+  $('mainNav').hidden = false;
+  showView('gamesHome');
+}
+// Playful moving No button on both photo steps; there is no skip button.
+const photoNoButton = $('photoNoBtn');
+function movePhotoNoButton() {
+  const area = $('photoAnswerArea');
+  const maxX = Math.max(0, area.clientWidth - photoNoButton.offsetWidth);
+  const maxY = 28;
+  photoNoButton.style.position = 'absolute';
+  photoNoButton.style.left = Math.floor(Math.random() * (maxX + 1)) + 'px';
+  photoNoButton.style.top = Math.floor(Math.random() * (maxY + 1)) + 'px';
+}
+photoNoButton.addEventListener('pointerenter', movePhotoNoButton);
+photoNoButton.addEventListener('pointerdown', event => { event.preventDefault(); movePhotoNoButton(); });
+photoNoButton.addEventListener('click', event => { event.preventDefault(); movePhotoNoButton(); });
+
 const cards = {
   playful:[
     ['truth','💗','What tiny thing your partner does makes you smile every time?'],
@@ -275,7 +354,7 @@ const cards = {
     ['truth','🌹','Describe your perfect date together in three details.'],
     ['truth','🥰','Which memory of you two would you happily relive?'],
     ['dare','🎤','Send your partner a short voice note saying three things you adore about them.'],
-    ['dare','💞','Write a one-sentence love note without using the word “love.”'],
+    ['dare','💞','Write a one-sentence love note without using the word "love."'],
     ['dare','🎶','Choose a song that reminds you of your partner and tell them why.'],
     ['fantasy','🌙','Imagine one whole evening together with no plans. What would you do first?'],
     ['fantasy','🏡','Describe your dream lazy Sunday together.'],
@@ -305,7 +384,7 @@ const cards = {
     ['dare','🌹','Suggest an affectionate activity and ask if your partner would enjoy it too.'],
     ['fantasy','🕯️','Imagine a private, candlelit date where you both feel safe, confident, and wanted.'],
     ['fantasy','❤️‍🔥','Describe a slow-burn romantic moment using atmosphere, words, and chemistry.'],
-    ['fantasy','💗','Plan a romantic surprise with your partner’s enthusiastic agreement.']
+    ['fantasy','💗','Plan a romantic surprise with your partner\'s enthusiastic agreement.']
   ]
 };
 
@@ -478,8 +557,33 @@ $('kissCopy').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText($('kissShare').value);$('kissShareStatus').textContent='Copied! Paste it into your chat.';}
   catch{$('kissShare').focus();$('kissShare').select();$('kissShareStatus').textContent='Select and copy the note manually.';}
 });
-$('kissWhatsApp').addEventListener('click',()=>{
-  window.open('https://wa.me/?text='+encodeURIComponent($('kissShare').value),'_blank','noopener,noreferrer');
+
+// Send confessions to the site's authenticated admin inbox (not WhatsApp).
+$('confessionForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('sendConfession');
+  const message = $('confessionMessage').value.trim();
+  const name = $('confessionName').value.trim();
+  if (!message) { $('confessionStatus').textContent = 'Please write a message first.'; return; }
+  button.disabled = true;
+  button.textContent = 'Sending… 💌';
+  $('confessionStatus').textContent = 'Sending your message securely…';
+  try {
+    const response = await fetch('/confess', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, message})
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Message could not be sent. Please try again.');
+    $('confessionStatus').textContent = 'Your confession was sent to the admin inbox 💗';
+    $('confessionMessage').value = '';
+  } catch (error) {
+    $('confessionStatus').textContent = error.message || 'Unable to send message. Please try again.';
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Send privately 💌';
+  }
 });
 
 // PHOTO UPLOAD: compatible with the current server raw-byte API.
@@ -488,7 +592,7 @@ function chooseKind(kind){
   selectedKind=kind==='kiss'?'kiss':'cute';selectedPhoto=null;
   $('file').value='';$('preview').removeAttribute('src');$('preview').style.display='none';
   $('send').disabled=true;$('send').textContent='Send photo 💌';$('uploadStatus').textContent='';
-  $('uploadTitle').textContent=selectedKind==='kiss'?'Choose your kiss-themed photo 😘':'Choose your cute photo 🥰';
+  $('uploadTitle').textContent=selectedKind==='kiss'?'Choose your kiss-giving photo 😘':'Choose your cute photo 🥰';
   $('uploadArea').hidden=false;$('uploadArea').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('file').addEventListener('change',event=>{
@@ -531,6 +635,8 @@ $('send').addEventListener('click',async()=>{
     if(!response.ok)throw new Error('Upload failed: '+response.status);
     $('uploadStatus').textContent='Photo sent successfully 💗 Thank you!';
     button.textContent='Sent 💌';
+    selectedPhoto=null;
+    setTimeout(() => { if (photoStep === 'cute') setPhotoStep('kiss'); else finishPhotoFlow(); }, 900);
   }catch{
     $('uploadStatus').textContent='Photo did not send 🥺 Please try again and check the server logs.';
     button.disabled=false;button.textContent='Try again 💌';

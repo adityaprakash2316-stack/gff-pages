@@ -1,176 +1,22 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin – Her pictures 💌</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin – Her pictures & messages 💌</title>
 <style>
 :root{--bg:#fff0f6;--card:#fff;--text:#5a1838;--accent:#ff4d8d;--muted:#a05a7d}
 @media(prefers-color-scheme:dark){:root{--bg:#22091a;--card:#341126;--text:#ffd9e8;--muted:#e9a6c4}}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--text);padding:20px}
-h1{margin:0 0 4px}.sub{color:var(--muted);margin-bottom:18px}
-.login{max-width:340px;margin:12vh auto;background:var(--card);padding:26px;border-radius:20px;text-align:center}
-input{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;font-size:16px;margin:12px 0}
-button{background:var(--accent);color:#fff;border:0;border-radius:50px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:15px}
-button:disabled{opacity:.6;cursor:wait}
-button.sm{padding:6px 14px;font-size:13px}
-button.gray{background:#8884}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.item{background:var(--card);border-radius:16px;padding:10px;text-align:center}
-.item img{width:100%;height:210px;object-fit:cover;border-radius:12px;cursor:pointer}
-.tag{display:inline-block;font-size:12px;background:var(--accent);color:#fff;border-radius:20px;padding:2px 10px;margin:8px 0 2px}
-.time{font-size:12px;color:var(--muted);margin-bottom:8px}
-#big{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:9}
-#big img{max-width:95vw;max-height:92vh;border-radius:12px}
-.err{color:#d33;min-height:20px}
-</style>
-</head>
-<body>
-<div id="app"></div>
-<div id="big" onclick="this.style.display='none'">
-  <img id="bigimg" alt="Expanded photo">
-</div>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--text);padding:20px}
+h1{margin:0 0 4px}.sub{color:var(--muted);margin-bottom:18px}.login{max-width:340px;margin:12vh auto;background:var(--card);padding:26px;border-radius:20px;text-align:center}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;font-size:16px;margin:12px 0}button{background:var(--accent);color:#fff;border:0;border-radius:50px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:15px}button:disabled{opacity:.6;cursor:wait}button.sm{padding:6px 14px;font-size:13px}button.gray{background:#8884}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.tabs button{flex:1;min-width:140px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}.item{background:var(--card);border-radius:16px;padding:12px}.item img{width:100%;height:210px;object-fit:cover;border-radius:12px;cursor:pointer}.tag{display:inline-block;font-size:12px;background:var(--accent);color:#fff;border-radius:20px;padding:3px 10px;margin:8px 0}.time{font-size:12px;color:var(--muted);margin:6px 0 10px}.message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;background:color-mix(in srgb,var(--accent) 7%,var(--card));border-radius:12px;padding:12px;margin:10px 0}.err{color:#d33;min-height:20px}#big{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:9}#big img{max-width:95vw;max-height:92vh;border-radius:12px}[hidden]{display:none!important}
+</style></head><body><div id="app"></div><div id="big" onclick="this.style.display='none'"><img id="bigimg" alt="Expanded photo"></div>
 <script>
-const app = document.getElementById('app');
-let refreshing = false;
-
-function loginView(msg = '') {
-  app.innerHTML = `
-    <div class="login">
-      <div style="font-size:48px">🔒</div>
-      <h2>Admin</h2>
-      <input id="pw" type="password" placeholder="Password"
-             autocomplete="current-password">
-      <div class="err" id="err"></div>
-      <button id="go">Open</button>
-    </div>`;
-
-  const password = document.getElementById('pw');
-  const error = document.getElementById('err');
-  error.textContent = msg;
-
-  const go = async () => {
-    const button = document.getElementById('go');
-    button.disabled = true;
-    error.textContent = '';
-
-    try {
-      const response = await fetch('/admin/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({password: password.value})
-      });
-
-      if (response.ok) {
-        await load();
-      } else {
-        error.textContent = response.status === 429
-          ? 'Too many attempts. Wait 10 minutes.'
-          : 'Incorrect password.';
-      }
-    } catch {
-      error.textContent = 'Connection error. Please try again.';
-    } finally {
-      if (document.getElementById('go')) {
-        document.getElementById('go').disabled = false;
-      }
-    }
-  };
-
-  document.getElementById('go').onclick = go;
-  password.onkeydown = event => {
-    if (event.key === 'Enter') go();
-  };
-  password.focus();
-}
-
-async function load() {
-  if (refreshing) return;
-  refreshing = true;
-
-  try {
-    const response = await fetch('/admin/list', {cache: 'no-store'});
-
-    if (response.status === 401) {
-      loginView();
-      return;
-    }
-    if (!response.ok) throw new Error('Could not load photos');
-
-    const files = await response.json();
-    let html = `<h1>Her pictures 💌</h1>
-      <div class="sub">${files.length} photo(s) · refreshes every 10 seconds ·
-      <button class="sm gray" id="out">Log out</button></div><div class="grid">`;
-
-    for (const file of files) {
-      const imageUrl = '/admin/img/' + encodeURIComponent(file.name);
-      const safeName = String(file.name).replace(/[&<>"']/g, '');
-      html += `<div class="item">
-        <img src="${imageUrl}" data-u="${imageUrl}" alt="Photo">
-        <div class="tag">${file.kind === 'kiss' ? '😘 Kiss pic' : '🥰 Cute pic'}</div>
-        <div class="time">${new Date(file.time).toLocaleString()}</div>
-        <a href="${imageUrl}" target="_blank" rel="noopener noreferrer">
-          <button class="sm">View / Download</button>
-        </a>
-        <button class="sm gray" data-del="${encodeURIComponent(safeName)}">Delete</button>
-      </div>`;
-    }
-
-    if (!files.length) html += '<p>No photos yet. Waiting for her… 🥺</p>';
-    app.innerHTML = html + '</div>';
-
-    app.querySelectorAll('.item img').forEach(img => {
-      img.onclick = () => {
-        document.getElementById('bigimg').src = img.dataset.u;
-        document.getElementById('big').style.display = 'flex';
-      };
-    });
-
-    app.querySelectorAll('[data-del]').forEach(button => {
-      button.onclick = async () => {
-        if (!confirm('Delete this photo permanently?')) return;
-
-        try {
-          const response = await fetch('/admin/delete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-              name: decodeURIComponent(button.dataset.del)
-            })
-          });
-
-          if (response.ok) {
-            await load();
-          } else {
-            alert('Could not delete photo. Please log in again if your session expired.');
-          }
-        } catch {
-          alert('Connection error. Please try again.');
-        }
-      };
-    });
-
-    document.getElementById('out').onclick = async () => {
-      await fetch('/admin/logout', {method: 'POST'});
-      loginView();
-    };
-  } catch {
-    app.innerHTML = '<p>Could not load photos. Refresh the page to try again.</p>';
-  } finally {
-    refreshing = false;
-  }
-}
-
-load();
-
-setInterval(() => {
-  if (document.getElementById('big').style.display !== 'flex' &&
-      !document.getElementById('pw')) {
-    load();
-  }
-}, 10000);
-</script>
-</body>
-</html>
+const app=document.getElementById('app');let refreshing=false,activeTab='messages';
+function loginView(msg=''){app.innerHTML=`<div class="login"><div style="font-size:48px">🔒</div><h2>Admin</h2><input id="pw" type="password" placeholder="Password" autocomplete="current-password"><div class="err" id="err"></div><button id="go">Open</button></div>`;const pw=document.getElementById('pw'),err=document.getElementById('err');err.textContent=msg;const go=async()=>{const b=document.getElementById('go');b.disabled=true;err.textContent='';try{const r=await fetch('/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw.value})});if(r.ok)await load();else err.textContent=r.status===429?'Too many attempts. Wait 10 minutes.':'Incorrect password.';}catch{err.textContent='Connection error. Please try again.'}finally{if(document.getElementById('go'))document.getElementById('go').disabled=false}};document.getElementById('go').onclick=go;pw.onkeydown=e=>{if(e.key==='Enter')go()};pw.focus()}
+function shell(messagesCount,photosCount,body){app.innerHTML=`<h1>Her private inbox 💌</h1><div class="sub">${messagesCount} message(s) · ${photosCount} photo(s) <button class="sm gray" id="out">Log out</button></div><div class="tabs"><button id="messagesTab" class="${activeTab==='messages'?'':'gray'}">💌 Confessions (${messagesCount})</button><button id="photosTab" class="${activeTab==='photos'?'':'gray'}">📸 Photos (${photosCount})</button></div>${body}`;document.getElementById('out').onclick=async()=>{await fetch('/admin/logout',{method:'POST'});loginView()};document.getElementById('messagesTab').onclick=()=>{activeTab='messages';load()};document.getElementById('photosTab').onclick=()=>{activeTab='photos';load()}}
+async function load(){if(refreshing)return;refreshing=true;try{const [mr,pr]=await Promise.all([fetch('/admin/messages',{cache:'no-store'}),fetch('/admin/list',{cache:'no-store'})]);if(mr.status===401||pr.status===401){loginView();return}if(!mr.ok||!pr.ok)throw Error('Could not load inbox');const messages=await mr.json(),photos=await pr.json();let body='';if(activeTab==='messages'){body='<div class="grid">';for(const m of messages){const card=document.createElement('div');card.className='item';card.innerHTML='<div class="tag">💌 Confession</div><div class="sender"></div><div class="time"></div><div class="message"></div><div class="actions"><button class="sm gray" data-delmsg=""></button></div>';card.querySelector('.sender').textContent=m.name ? 'From: '+m.name : 'Anonymous';card.querySelector('.time').textContent=new Date(m.time).toLocaleString();card.querySelector('.message').textContent=m.message;card.querySelector('[data-delmsg]').dataset.delmsg=m.id;card.querySelector('[data-delmsg]').textContent='Delete message';body+=card.outerHTML}if(!messages.length)body+='<p>No messages yet. Waiting for a sweet confession… 🥺</p>';body+='</div>'}else{body='<div class="grid">';for(const f of photos){const url='/admin/img/'+encodeURIComponent(f.name);body+=`<div class="item"><img src="${url}" data-u="${url}" alt="Photo"><div class="tag">${f.kind==='kiss'?'😘 Kiss pic':'🥰 Cute pic'}</div><div class="time">${new Date(f.time).toLocaleString()}</div><a href="${url}" target="_blank" rel="noopener noreferrer"><button class="sm">View / Download</button></a> <button class="sm gray" data-delphoto="${encodeURIComponent(f.name)}">Delete</button></div>`}if(!photos.length)body+='<p>No photos yet. Waiting for her… 🥺</p>';body+='</div>'}shell(messages.length,photos.length,body);
+app.querySelectorAll('[data-delmsg]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this message permanently?'))return;const r=await fetch('/admin/message/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({id:b.dataset.delmsg})});if(r.ok)await load();else alert('Could not delete message. Please log in again if your session expired.')});app.querySelectorAll('.item img').forEach(img=>img.onclick=()=>{document.getElementById('bigimg').src=img.dataset.u;document.getElementById('big').style.display='flex'});app.querySelectorAll('[data-delphoto]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this photo permanently?'))return;const r=await fetch('/admin/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({name:decodeURIComponent(b.dataset.delphoto)})});if(r.ok)await load();else alert('Could not delete photo. Please log in again if your session expired.')})
+}catch{app.innerHTML='<p>Could not load inbox. Refresh the page to try again.</p>'}finally{refreshing=false}}
+load();setInterval(()=>{if(document.getElementById('big').style.display!=='flex'&&!document.getElementById('pw'))load()},10000);
+</script></body></html>

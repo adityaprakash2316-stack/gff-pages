@@ -1,9 +1,8 @@
-
 {
   "name": "gf-pages",
   "version": "1.0.0",
   "private": true,
-  "description": "Two-page photo sharing website with Cloudinary storage",
+  "description": "Romantic photo-sharing site with private admin confession inbox and Cloudinary photo storage",
   "main": "server.cjs",
   "type": "commonjs",
   "scripts": {
