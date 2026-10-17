@@ -1,171 +1,546 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>I miss you ❤️</title>
+<meta name="theme-color" content="#4b102e">
+<title>Just Us ❤️</title>
 <style>
-:root{--bg1:#ffd1e3;--bg2:#ffb3d1;--card:#ffffff;--text:#6b1d45;--accent:#ff4d8d;--accent2:#e0356f;--muted:#a05a7d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#3a1028;--bg2:#5a1a3d;--card:#2b0f20;--text:#ffd9e8;--accent:#ff4d8d;--accent2:#e0356f;--muted:#e9a6c4}}
+:root {
+  --bg:#210817;--panel:#351126;--text:#fff0f6;--muted:#e7b5ca;
+  --pink:#ff4d91;--rose:#ff8ab5;--border:#713050;
+}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.card{background:var(--card);border-radius:28px;padding:32px 24px;width:min(92vw,420px);text-align:center;box-shadow:0 20px 50px rgba(255,77,141,.3);position:relative;z-index:2}
-.emoji{font-size:64px;animation:beat 1.2s infinite}
-@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
-h1{font-size:28px;margin:12px 0 6px}
-p{color:var(--muted);margin:0 0 22px;font-size:17px}
-.btns{display:flex;gap:16px;justify-content:center;align-items:center;min-height:64px}
-button{font-size:18px;font-weight:700;border:none;border-radius:50px;padding:14px 30px;cursor:pointer;font-family:inherit}
-.yes{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 8px 20px rgba(255,77,141,.45);transition:transform .2s}
-.yes:active{transform:scale(.95)}
-.no{background:#e9e9ef;color:#555;transition:left .25s,top .25s}
-.screen{display:none}.screen.on{display:block}
-.pick{display:inline-block;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:14px 28px;border-radius:50px;font-weight:700;cursor:pointer;margin-bottom:14px}
-#preview{max-width:100%;max-height:240px;border-radius:18px;margin:10px auto;display:none;border:4px solid var(--accent)}
-button[disabled]{opacity:.4;cursor:not-allowed}
-.heart{position:fixed;bottom:-40px;font-size:24px;opacity:.7;animation:rise linear forwards;z-index:1;pointer-events:none}
-@keyframes rise{to{transform:translateY(-110vh) rotate(30deg);opacity:0}}
+body{
+  margin:0;min-height:100vh;color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:radial-gradient(ellipse at top,#632143 0%,transparent 55%),
+  linear-gradient(145deg,#1b0612,var(--bg))
+}
+button,input,select,textarea{font:inherit}
+button{
+  cursor:pointer;border:0;border-radius:999px;padding:12px 17px;
+  font-weight:750;transition:transform .15s,opacity .15s
+}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.55;cursor:wait}
+.primary{color:#fff;background:linear-gradient(135deg,var(--pink),#d92c72);box-shadow:0 7px 22px #ff4d9133}
+.secondary{color:var(--text);background:#ffffff12;border:1px solid var(--border)}
+.wrap{width:min(920px,100%);margin:auto;padding:22px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
+.brand{font-weight:850;font-size:18px}
+.brand span{color:var(--rose)}
+.pill{color:var(--muted);font-size:12px;border:1px solid var(--border);border-radius:99px;padding:7px 10px}
+.hero,.panel{background:linear-gradient(145deg,#3c142b,#2b0c1e);border:1px solid var(--border);border-radius:25px;padding:24px;box-shadow:0 20px 60px #0003}
+.hero{text-align:center;padding:34px 22px}
+.hero-emoji{font-size:60px}
+h1{font-size:clamp(28px,6vw,44px);line-height:1.1;margin:8px 0 12px}
+h2{margin:0 0 12px;font-size:24px}
+h3{margin:0 0 8px}
+p{line-height:1.6;color:var(--muted)}
+.small{font-size:13px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.nav button{flex:1;min-width:120px}
+.view{display:none}
+.view.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:18px}
+.tile{text-align:left;background:#ffffff08;border:1px solid var(--border);padding:18px;border-radius:18px;color:var(--text)}
+.tile strong{display:block;margin-bottom:5px;font-size:18px}
+.tile span{color:var(--muted);font-size:13px;line-height:1.5;display:block}
+.tile .big{font-size:30px;margin-bottom:10px}
+label{display:block;margin:12px 0 6px;font-size:14px;color:var(--muted)}
+input[type=text],select,textarea{
+  width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+  background:#1c0814;color:var(--text);outline-color:var(--pink)
+}
+.checkline{display:flex;align-items:flex-start;gap:10px;margin:12px 0;color:var(--muted);font-size:14px;line-height:1.5}
+.checkline input{margin-top:4px;accent-color:var(--pink)}
+.game-card{text-align:center;margin-top:16px;padding:26px 20px;border-radius:22px;background:linear-gradient(145deg,#5a1a3b,#341027);border:1px solid #a13e6b}
+.game-emoji{font-size:50px}
+.game-type{display:inline-block;border:1px solid #a13e6b;border-radius:99px;padding:5px 11px;color:#ffc1da;font-size:12px;margin:12px 0}
+.prompt{font-size:clamp(20px,4vw,28px);line-height:1.4;color:var(--text);margin:12px auto 20px;max-width:620px}
+.actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.progress{height:5px;background:#ffffff18;border-radius:99px;overflow:hidden;margin:18px 0}
+.progress div{height:100%;width:0;background:var(--pink);transition:width .2s}
+.result{white-space:pre-wrap;border:1px solid var(--border);border-radius:14px;padding:14px;background:#1c0814;color:var(--text);line-height:1.6}
+.upload-box{text-align:center}
+input[type=file]{width:100%;padding:12px;background:#ffffff08;border-radius:12px;margin:12px 0}
+#preview{max-width:100%;max-height:300px;display:none;margin:16px auto;border-radius:16px;border:2px solid var(--pink)}
+.notice{border-left:3px solid var(--rose);padding:10px 13px;background:#ffffff08;color:var(--muted);font-size:13px;line-height:1.5}
+footer{text-align:center;color:#b9829c;font-size:12px;padding:22px 0 0}
+[hidden]{display:none!important}
+@media(max-width:520px){.wrap{padding:14px 12px 32px}.hero,.panel{padding:20px 16px}header{align-items:flex-start}}
 </style>
 </head>
 <body>
-<div class="card">
+<div class="wrap">
+  <header>
+    <div class="brand">💌 Just <span>Us</span></div>
+    <div class="pill">A little love, just for you</div>
+  </header>
 
-  <div class="screen on" id="s1">
-    <div class="emoji">🥺</div>
-    <h1 id="t1">I miss you so much ❤️</h1>
-    <p>Do you miss me too?</p>
-    <div class="btns"><button class="yes" id="y1">Yes 💕</button><button class="no" id="n1">No</button></div>
-  </div>
+  <section class="hero" id="home">
+    <div class="hero-emoji">❤️‍🔥</div>
+    <h1>Hey, beautiful.</h1>
+    <p>This little corner of the internet is for us: smiles, flirting, and memories worth keeping.</p>
+    <div class="actions">
+      <button class="primary" onclick="showView('game')">Truth, Dare or Fantasy 💋</button>
+      <button class="secondary" onclick="showView('kissGame')">Kiss or Confess ❤️‍🔥</button>
+      <button class="secondary" onclick="showView('photos')">Send a photo 📸</button>
+    </div>
+    <p class="small">Made with love. Play only what feels comfortable. You can skip anything.</p>
+  </section>
 
-  <div class="screen" id="s2">
-    <div class="emoji" id="e2">📸</div>
-    <h1 id="t2">Then send me your cute pic 😍</h1>
-    <p id="p2">Will you send it to me?</p>
-    <div class="btns"><button class="yes" id="y2">Yes 💕</button><button class="no" id="n2">No</button></div>
-  </div>
+  <nav class="nav" aria-label="Website sections">
+    <button class="secondary" onclick="showView('home')">🏠 Home</button>
+    <button class="secondary" onclick="showView('game')">💋 Truth, Dare or Fantasy</button>
+    <button class="secondary" onclick="showView('kissGame')">❤️‍🔥 Kiss or Confess</button>
+    <button class="secondary" onclick="showView('photos')">📸 Photo corner</button>
+  </nav>
 
-  <div class="screen" id="s3">
-    <div class="emoji" id="e3">🥰</div>
-    <h1 id="t3">Attach your cute pic</h1>
-    <p>Choose it, then press send 💌</p>
-    <label class="pick" for="file">📷 Choose photo</label>
-    <input type="file" id="file" accept="image/*" hidden>
-    <img id="preview" alt="Your photo">
-    <div><button class="yes" id="send" disabled>Send to me 💌</button></div>
-  </div>
+  <!-- GAME ONE -->
+  <section class="view" id="game">
+    <div class="panel">
+      <h2>Truth, Dare or Fantasy? 💋</h2>
+      <p>Pick your vibe and draw a card. Your answers stay in this browser until you choose to share them.</p>
 
-  <div class="screen" id="s4">
-    <div class="emoji">💖</div>
-    <h1>Thank you, my love!</h1>
-    <p>You made my day 😘 You can close this page now.</p>
-  </div>
+      <label for="nickname">Your nickname (optional)</label>
+      <input id="nickname" type="text" maxlength="35" placeholder="Beautiful, princess, troublemaker...">
 
+      <label for="spice">Choose your vibe</label>
+      <select id="spice">
+        <option value="playful">💕 Playful & romantic</option>
+        <option value="spicy">😏 Flirty & spicy</option>
+        <option value="bold" selected>🔥 Bold adult flirting (18+)</option>
+      </select>
+
+      <label for="category">Choose a card type</label>
+      <select id="category">
+        <option value="all">Surprise me 🎲</option>
+        <option value="truth">Truth 💌</option>
+        <option value="dare">Dare ✨</option>
+        <option value="fantasy">Romantic fantasy 🌙</option>
+      </select>
+
+      <div class="notice"><strong>Comfort comes first.</strong> Every card is optional. Skip, change the vibe, or stop at any time. No photos, private details, or intimate proof are required.</div>
+
+      <label class="checkline">
+        <input type="checkbox" id="adultCheck">
+        <span>I am 18 or older and want to see the bold adult-flirting cards.</span>
+      </label>
+      <label class="checkline">
+        <input type="checkbox" id="consentCheck">
+        <span>I choose to play and understand I can stop whenever I want.</span>
+      </label>
+      <button class="primary" id="startGame">Deal my first card 💋</button>
+      <p class="small" id="startError" role="status"></p>
+
+      <div id="playArea" hidden>
+        <div class="progress"><div id="progressBar"></div></div>
+        <p class="small" id="cardCount">Your next card</p>
+        <div class="game-card" aria-live="polite">
+          <div class="game-emoji" id="cardEmoji">💌</div>
+          <div class="game-type" id="cardType">TRUTH</div>
+          <div class="prompt" id="cardPrompt"></div>
+          <p class="small">There's no wrong answer. Skip if it's not for you.</p>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="primary" id="nextCard">Another card 💗</button>
+          <button class="secondary" id="skipCard">Skip this one ↗</button>
+          <button class="secondary" id="endGame">Finish & share 💌</button>
+          <button class="danger" id="stopGame">Stop game</button>
+        </div>
+      </div>
+
+      <div id="results" hidden style="margin-top:20px">
+        <h3>Your love note 💖</h3>
+        <p>Review your message before sharing it. Your answers aren't automatically uploaded.</p>
+        <textarea id="shareText" class="result" rows="7" aria-label="Shareable love note"></textarea>
+        <div class="actions" style="margin-top:12px">
+          <button class="primary" id="copyResult">Copy my love note</button>
+          <button class="secondary" id="whatsappShare">Share on WhatsApp</button>
+          <button class="secondary" id="playAgain">Play again 🔄</button>
+        </div>
+        <p class="small" id="shareStatus" role="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME TWO -->
+  <section class="view" id="kissGame">
+    <div class="panel">
+      <h2>Kiss or Confess? 💋❤️‍🔥</h2>
+      <p>Reveal a confession or choose a romantic challenge. All cards are optional.</p>
+      <div class="notice"><strong>Your boundaries matter.</strong> Physical affection requires mutual, enthusiastic consent. A virtual kiss, sweet message, or skipping is always an option.</div>
+
+      <label for="kissSpice">Choose your vibe</label>
+      <select id="kissSpice">
+        <option value="romantic">💕 Romantic</option>
+        <option value="spicy">😏 Flirty & spicy</option>
+        <option value="bold" selected>🔥 Bold adult flirting (18+)</option>
+      </select>
+
+      <label class="checkline">
+        <input type="checkbox" id="kissAdult">
+        <span>I am 18 or older and want to play the bold version.</span>
+      </label>
+      <label class="checkline">
+        <input type="checkbox" id="kissConsent">
+        <span>I choose to play and can skip or stop whenever I want.</span>
+      </label>
+
+      <button class="primary" id="kissStart">Start playing 💋</button>
+      <p id="kissError" class="small" role="status"></p>
+
+      <div id="kissArea" hidden>
+        <div class="progress"><div id="kissProgress" style="height:100%;width:0;background:var(--pink)"></div></div>
+        <p class="small" id="kissCount">Your next card</p>
+        <div class="game-card" aria-live="polite">
+          <div class="game-emoji" id="kissEmoji">💋</div>
+          <div class="game-type" id="kissType">CONFESS</div>
+          <div class="prompt" id="kissPrompt"></div>
+          <p class="small">No pressure. Choose what feels comfortable.</p>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="primary" id="kissNext">Next card 💗</button>
+          <button class="secondary" id="kissSkip">Skip ↗</button>
+          <button class="secondary" id="kissFinish">Finish & share 💌</button>
+          <button class="danger" id="kissStop">Stop game</button>
+        </div>
+      </div>
+
+      <div id="kissResults" hidden style="margin-top:20px">
+        <h3>Your confession note 💌</h3>
+        <textarea id="kissShare" class="result" rows="7" aria-label="Your confession note"></textarea>
+        <div class="actions" style="margin-top:12px">
+          <button class="primary" id="kissCopy">Copy note</button>
+          <button class="secondary" id="kissWhatsApp">Share on WhatsApp</button>
+          <button class="secondary" id="kissAgain">Play again 🔄</button>
+        </div>
+        <p id="kissShareStatus" class="small" role="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHOTO UPLOAD -->
+  <section class="view" id="photos">
+    <div class="panel upload-box">
+      <h2>Our photo corner 📸</h2>
+      <p>Send a cute photo or a kiss-themed selfie if you feel like it. Nothing here is compulsory.</p>
+      <div class="grid">
+        <button class="tile" onclick="chooseKind('cute')">
+          <div class="big">🥰</div><strong>Cute photo</strong>
+          <span>A smile, a selfie, or a favorite memory.</span>
+        </button>
+        <button class="tile" onclick="chooseKind('kiss')">
+          <div class="big">😘</div><strong>Kiss-themed photo</strong>
+          <span>A kissy face or sweet, playful selfie—only if you want.</span>
+        </button>
+      </div>
+      <div id="uploadArea" hidden style="margin-top:22px">
+        <h3 id="uploadTitle">Choose a photo</h3>
+        <label for="file">Select an image from your device</label>
+        <input type="file" id="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif">
+        <img id="preview" alt="Selected photo preview">
+        <div class="actions">
+          <button class="primary" id="send" disabled>Send photo 💌</button>
+          <button class="secondary" id="cancelUpload">Cancel</button>
+        </div>
+        <p id="uploadStatus" role="status" aria-live="polite"></p>
+      </div>
+      <div class="notice" style="text-align:left;margin-top:20px">Photos are uploaded to Cloudinary. The current server stores them as publicly accessible image assets, so don't upload anything you need to keep private.</div>
+    </div>
+  </section>
+
+  <footer>Made with ❤️ · Be kind, be playful, respect every boundary.</footer>
 </div>
 
 <script>
-const HER_NAME = "";   // her name (optional)
-if (HER_NAME) document.getElementById('t1').textContent = HER_NAME + ', I miss you so much ❤️';
-
+'use strict';
 const $ = id => document.getElementById(id);
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on')}
+const viewIds = ['home','game','kissGame','photos'];
 
-// The "No" button runs away everywhere
-function dodge(btn){
-  const w = btn.offsetWidth, h = btn.offsetHeight;
-  btn.style.position = 'fixed';
-  btn.style.zIndex = 5;
-  btn.style.left = Math.max(8, Math.random()*(innerWidth - w - 16)) + 'px';
-  btn.style.top  = Math.max(8, Math.random()*(innerHeight - h - 16)) + 'px';
+function showView(name) {
+  viewIds.forEach(id => $(id).classList.toggle('active',id===name));
+  const target = $(name);
+  if (target) target.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function makeRunaway(btn, yes){
-  const run = e => { e.preventDefault(); e.stopPropagation(); dodge(btn); yes.style.transform = 'scale(' + (1 + Math.random()*0.15) + ')'; };
-  ['mouseenter','mouseover','pointerdown','touchstart','click','focus'].forEach(ev => btn.addEventListener(ev, run, {passive:false}));
-}
-makeRunaway($('n1'), $('y1'));
-makeRunaway($('n2'), $('y2'));
+showView('home');
 
-// Two rounds: normal pic, then kiss pic
-const rounds = [
-  {e:'📸', t:'Then send me your cute pic 😍', p:'Will you send it to me?', t3:'Attach your cute pic', e3:'🥰'},
-  {e:'😘', t:'One more pic, please… while giving a kiss 💋', p:'Will you send me a kiss pic?', t3:'Attach your kiss pic', e3:'💋'}
-];
-let round = 0, photo = null, locked = false;
-
-function openAsk(){
-  const r = rounds[round];
-  $('e2').textContent = r.e; $('t2').textContent = r.t; $('p2').textContent = r.p;
-  const n = $('n2');
-  n.removeAttribute('style'); n.style.display = '';   // bring "No" back (it will run away again)
-  $('y2').style.transform = '';
-  show('s2');
-}
-$('y1').onclick = () => { $('n1').style.display='none'; round = 0; openAsk(); };
-$('y2').onclick = () => {
-  $('n2').style.display='none';
-  const r = rounds[round];
-  $('e3').textContent = r.e3; $('t3').textContent = r.t3;
-  photo = null; $('file').value = ''; $('preview').style.display='none'; $('send').disabled = true;
-  locked = true; show('s3');
+const cards = {
+  playful:[
+    ['truth','💗','What tiny thing your partner does makes you smile every time?'],
+    ['truth','💌','What was your first impression of your partner?'],
+    ['truth','🌹','Describe your perfect date together in three details.'],
+    ['truth','🥰','Which memory of you two would you happily relive?'],
+    ['dare','🎤','Send your partner a short voice note saying three things you adore about them.'],
+    ['dare','💞','Write a one-sentence love note without using the word “love.”'],
+    ['dare','🎶','Choose a song that reminds you of your partner and tell them why.'],
+    ['fantasy','🌙','Imagine one whole evening together with no plans. What would you do first?'],
+    ['fantasy','🏡','Describe your dream lazy Sunday together.'],
+    ['fantasy','💋','Plan a movie-night date with snacks, cuddles, and your favorite film.']
+  ],
+  spicy:[
+    ['truth','😏','What kind of compliment from your partner makes you secretly blush?'],
+    ['truth','🔥','What outfit or look makes you feel especially confident?'],
+    ['truth','💋','What makes a kiss feel romantic and memorable to you?'],
+    ['truth','😉','What little flirtatious thing gets your attention?'],
+    ['dare','💌','Text your partner a cheeky compliment you feel comfortable sharing.'],
+    ['dare','😘','Send a kiss emoji with a sweet, playful message.'],
+    ['dare','✨','Write a mysterious invitation for your next date.'],
+    ['fantasy','🕯️','Imagine a candlelit date. Describe the music, atmosphere, and first thing you would say.'],
+    ['fantasy','🌹','Describe your idea of irresistible romantic chemistry.'],
+    ['fantasy','💗','What affectionate gesture makes you feel wanted and appreciated?']
+  ],
+  bold:[
+    ['truth','🔥','What kind of consensual, non-explicit flirting makes you feel most desired?'],
+    ['truth','😈','What is the boldest romantic message you would feel comfortable sending?'],
+    ['truth','💋','What makes you feel confident and attractive on a date?'],
+    ['truth','❤️‍🔥','Which romantic anticipation do you enjoy most: a teasing message, surprise date, or heartfelt confession?'],
+    ['truth','😉','What flirty thing would you love your partner to say, if you were both in the mood?'],
+    ['dare','💌','Write a daring but respectful invitation for a private date night.'],
+    ['dare','😘','Send a virtual kiss and a sincere compliment, if you want.'],
+    ['dare','✨','Create a three-line romantic teaser for your next date.'],
+    ['dare','🌹','Suggest an affectionate activity and ask if your partner would enjoy it too.'],
+    ['fantasy','🕯️','Imagine a private, candlelit date where you both feel safe, confident, and wanted.'],
+    ['fantasy','❤️‍🔥','Describe a slow-burn romantic moment using atmosphere, words, and chemistry.'],
+    ['fantasy','💗','Plan a romantic surprise with your partner’s enthusiastic agreement.']
+  ]
 };
 
-$('file').onchange = e => {
-  photo = e.target.files[0];
-  if (!photo) return;
-  $('preview').src = URL.createObjectURL(photo);
-  $('preview').style.display = 'block';
-  $('send').disabled = false;
-};
+let deck=[],drawn=[],skipped=0,currentCard=null,active=false,cardNumber=0;
 
-// Page cannot be left until the photos are sent
-addEventListener('beforeunload', e => { if (locked) { e.preventDefault(); e.returnValue = ''; } });
-
-// Shrink big phone photos before upload (faster), fall back to the original file
-function shrink(file){
-  return new Promise(res => {
-    const img = new Image();
-    img.onload = () => {
-      const max = 1600, r = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob(b => res(b || file), 'image/jpeg', 0.88);
-    };
-    img.onerror = () => res(file);
-    img.src = URL.createObjectURL(file);
-  });
+function shuffled(items){
+  const a=items.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
 }
-
-$('send').onclick = async () => {
-  if (!photo) return;
-  const btn = $('send'); btn.disabled = true; btn.textContent = 'Sending… 💌';
-  try {
-    const blob = await shrink(photo);
-    const r = await fetch('/upload?kind=' + (round === 0 ? 'cute' : 'kiss'), {
-      method: 'POST', headers: {'Content-Type': blob.type || 'image/jpeg'}, body: blob
-    });
-    if (!r.ok) throw new Error('upload failed');
-  } catch (err) {
-    btn.disabled = false; btn.textContent = 'Send to me 💌';
-    alert('Photo did not send 🥺 Please try again.');
+function buildDeck(){
+  const level=$('spice').value,category=$('category').value;
+  let pool=level==='bold'?[...cards.playful,...cards.spicy,...cards.bold]
+    :level==='spicy'?[...cards.playful,...cards.spicy]:[...cards.playful];
+  if(category!=='all')pool=pool.filter(c=>c[0]===category);
+  return shuffled(pool);
+}
+function start(){
+  $('startError').textContent='';
+  if(!$('consentCheck').checked){
+    $('startError').textContent='Please confirm that you choose to play.';
     return;
   }
-  btn.textContent = 'Send to me 💌';
-  round++;
-  if (round < rounds.length) { openAsk(); }
-  else { locked = false; show('s4'); setTimeout(() => window.close(), 2500); }
-};
+  if($('spice').value==='bold'&&!$('adultCheck').checked){
+    $('startError').textContent='Bold mode is for adults 18+. Confirm your age or choose another vibe.';
+    return;
+  }
+  deck=buildDeck();
+  if(!deck.length){$('startError').textContent='No cards for that selection. Choose another card type.';return;}
+  drawn=[];skipped=0;cardNumber=0;active=true;
+  $('results').hidden=true;$('playArea').hidden=false;drawNext();
+}
+function drawNext(){
+  if(!active)return;
+  if(!deck.length){finishGame();return;}
+  currentCard=deck.pop();drawn.push(currentCard);cardNumber++;
+  $('cardEmoji').textContent=currentCard[1];
+  $('cardType').textContent=currentCard[0].toUpperCase();
+  $('cardPrompt').textContent=currentCard[2];
+  $('cardCount').textContent='Card '+cardNumber+' · '+drawn.length+' drawn · '+skipped+' skipped';
+  $('progressBar').style.width=Math.min(100,drawn.length/12*100)+'%';
+}
+function skip(){
+  if(!active||!currentCard)return;
+  skipped++;drawn.pop();currentCard=null;
+  drawNext();
+}
+function finishGame(){
+  active=false;$('playArea').hidden=true;$('results').hidden=false;
+  const nick=$('nickname').value.trim();
+  $('shareText').value=
+`${nick?'Hey '+nick:'Hey, beautiful'} 💗
 
-// floating hearts
-setInterval(() => {
-  const h = document.createElement('div');
-  h.className = 'heart';
-  h.textContent = ['❤️','💕','💖','💗'][Math.floor(Math.random()*4)];
-  h.style.left = Math.random()*100 + 'vw';
-  h.style.animationDuration = (5 + Math.random()*5) + 's';
-  document.body.appendChild(h);
-  setTimeout(() => h.remove(), 10000);
-}, 600);
+I played Truth, Dare or Fantasy and thought of us. ❤️
+
+Cards explored: ${drawn.length}
+Cards skipped: ${skipped}
+
+I love that we can laugh, flirt, and make memories at our own pace. No pressure, just us.
+
+Your turn: ask me a question or choose our next date-night vibe. 💋`;
+}
+function stopGame(){
+  active=false;drawn=[];deck=[];currentCard=null;
+  $('playArea').hidden=true;$('results').hidden=true;
+  $('startError').textContent='Game stopped. Take a break whenever you need.';
+}
+$('startGame').addEventListener('click',start);
+$('nextCard').addEventListener('click',drawNext);
+$('skipCard').addEventListener('click',skip);
+$('endGame').addEventListener('click',finishGame);
+$('stopGame').addEventListener('click',stopGame);
+$('playAgain').addEventListener('click',()=>{
+  $('results').hidden=true;$('playArea').hidden=true;$('startError').textContent='';
+});
+$('copyResult').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText($('shareText').value);$('shareStatus').textContent='Copied! Paste it into your chat.';}
+  catch{$('shareText').focus();$('shareText').select();$('shareStatus').textContent='Select and copy the message manually.';}
+});
+$('whatsappShare').addEventListener('click',()=>{
+  window.open('https://wa.me/?text='+encodeURIComponent($('shareText').value),'_blank','noopener,noreferrer');
+});
+
+// KISS OR CONFESS
+const kissCards={
+  romantic:[
+    ['CONFESS','💗','What moment made your partner special to you?'],
+    ['KISS','😘','Send a virtual kiss and a sweet message, if you want.'],
+    ['CONFESS','🌹','What kind of affection makes you feel most loved?'],
+    ['KISS','💋','If together and both willing, ask for a kiss. Otherwise, send a kiss emoji.'],
+    ['CONFESS','💌','What romantic thing do you dream of doing together?'],
+    ['KISS','🥰','Send your partner a compliment that might make them blush.']
+  ],
+  spicy:[
+    ['CONFESS','😏','What kind of flirting makes you feel attractive?'],
+    ['KISS','💋','Send a playful kiss emoji with a cheeky compliment.'],
+    ['CONFESS','🔥','What look or outfit makes you feel extra confident?'],
+    ['KISS','😉','Write a teasing invitation for your next date night.'],
+    ['CONFESS','❤️‍🔥','What makes a romantic moment exciting without feeling pressured?'],
+    ['KISS','😘','If together and both enthusiastically agree, share a kiss—or send a virtual one.']
+  ],
+  bold:[
+    ['CONFESS','🔥','What bold romantic compliment would you love to hear?'],
+    ['KISS','💋','Send a virtual kiss and describe the romantic greeting you enjoy.'],
+    ['CONFESS','😈','What kind of consensual teasing or flirting makes you smile?'],
+    ['KISS','❤️‍🔥','Write a daring but respectful invitation for a private date night.'],
+    ['CONFESS','🌙','What helps you feel safe, wanted, and confident during a romantic evening?'],
+    ['KISS','😘','Ask your partner whether they would enjoy a kiss. If apart, send a virtual kiss.'],
+    ['CONFESS','💌','What affectionate thing would you like to explore together, if you both want to?'],
+    ['KISS','✨','Send a voice note with a romantic compliment—or skip.'],
+    ['CONFESS','💗','What boundary helps you feel comfortable when flirting?'],
+    ['KISS','🌹','Plan a romantic surprise together and ask what would make it special for both of you.']
+  ]
+};
+let kissDeck=[],kissDrawn=[],kissSkipped=0,kissActive=false;
+
+function startKissGame(){
+  $('kissError').textContent='';
+  if(!$('kissConsent').checked){$('kissError').textContent='Please confirm you choose to play.';return;}
+  const level=$('kissSpice').value;
+  if(level==='bold'&&!$('kissAdult').checked){$('kissError').textContent='Bold mode is for adults 18+. Confirm your age or choose another vibe.';return;}
+  kissDeck=shuffled(kissCards[level]);kissDrawn=[];kissSkipped=0;kissActive=true;
+  $('kissResults').hidden=true;$('kissArea').hidden=false;nextKissCard();
+}
+function nextKissCard(){
+  if(!kissActive)return;
+  if(!kissDeck.length){finishKissGame();return;}
+  const card=kissDeck.pop();kissDrawn.push(card);
+  $('kissEmoji').textContent=card[1];$('kissType').textContent=card[0];$('kissPrompt').textContent=card[2];
+  $('kissCount').textContent='Card '+kissDrawn.length+' · '+kissSkipped+' skipped';
+  $('kissProgress').style.width=(kissDrawn.length/kissCards[$('kissSpice').value].length*100)+'%';
+}
+function skipKissCard(){
+  if(!kissActive)return;
+  kissSkipped++;
+  if(kissDrawn.length)kissDrawn.pop();
+  nextKissCard();
+}
+function finishKissGame(){
+  kissActive=false;$('kissArea').hidden=true;$('kissResults').hidden=false;
+  $('kissShare').value=
+`Hey, you ❤️‍🔥
+
+I played Kiss or Confess and thought of you!
+
+Cards explored: ${kissDrawn.length}
+Cards skipped: ${kissSkipped}
+
+My favorite part is getting to flirt, laugh, and make sweet memories with you. No pressure—just affection and us at our own pace. 💋
+
+Your turn: choose a confession for me, or plan our next date night. ❤️`;
+}
+function stopKissGame(){
+  kissActive=false;kissDeck=[];kissDrawn=[];
+  $('kissArea').hidden=true;$('kissResults').hidden=true;
+  $('kissError').textContent='Game stopped. Take a break whenever you need.';
+}
+$('kissStart').addEventListener('click',startKissGame);
+$('kissNext').addEventListener('click',nextKissCard);
+$('kissSkip').addEventListener('click',skipKissCard);
+$('kissFinish').addEventListener('click',finishKissGame);
+$('kissStop').addEventListener('click',stopKissGame);
+$('kissAgain').addEventListener('click',()=>{
+  $('kissResults').hidden=true;$('kissArea').hidden=true;$('kissError').textContent='';
+});
+$('kissCopy').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText($('kissShare').value);$('kissShareStatus').textContent='Copied! Paste it into your chat.';}
+  catch{$('kissShare').focus();$('kissShare').select();$('kissShareStatus').textContent='Select and copy the note manually.';}
+});
+$('kissWhatsApp').addEventListener('click',()=>{
+  window.open('https://wa.me/?text='+encodeURIComponent($('kissShare').value),'_blank','noopener,noreferrer');
+});
+
+// PHOTO UPLOAD: compatible with the current server raw-byte API.
+let selectedKind='cute',selectedPhoto=null,previewUrl=null;
+function chooseKind(kind){
+  selectedKind=kind==='kiss'?'kiss':'cute';selectedPhoto=null;
+  $('file').value='';$('preview').removeAttribute('src');$('preview').style.display='none';
+  $('send').disabled=true;$('send').textContent='Send photo 💌';$('uploadStatus').textContent='';
+  $('uploadTitle').textContent=selectedKind==='kiss'?'Choose your kiss-themed photo 😘':'Choose your cute photo 🥰';
+  $('uploadArea').hidden=false;$('uploadArea').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('file').addEventListener('change',event=>{
+  selectedPhoto=event.target.files&&event.target.files[0];
+  $('send').disabled=!selectedPhoto;$('uploadStatus').textContent='';
+  if(!selectedPhoto){$('preview').style.display='none';return;}
+  if(!selectedPhoto.type.startsWith('image/')){
+    selectedPhoto=null;$('send').disabled=true;$('uploadStatus').textContent='Please choose an image file.';return;
+  }
+  if(previewUrl)URL.revokeObjectURL(previewUrl);
+  previewUrl=URL.createObjectURL(selectedPhoto);$('preview').src=previewUrl;$('preview').style.display='block';
+});
+function shrink(file){
+  return new Promise(resolve=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      try{
+        const max=1600,ratio=Math.min(1,max/Math.max(img.width,img.height));
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(img.width*ratio));
+        canvas.height=Math.max(1,Math.round(img.height*ratio));
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        canvas.toBlob(blob=>{URL.revokeObjectURL(url);resolve(blob||file);},'image/jpeg',0.88);
+      }catch{URL.revokeObjectURL(url);resolve(file);}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(file);};img.src=url;
+  });
+}
+$('send').addEventListener('click',async()=>{
+  if(!selectedPhoto)return;
+  const button=$('send');button.disabled=true;button.textContent='Sending… 💌';
+  $('uploadStatus').textContent='Uploading your photo…';
+  try{
+    const blob=await shrink(selectedPhoto);
+    const response=await fetch('/upload?kind='+selectedKind,{
+      method:'POST',
+      headers:{'Content-Type':blob.type||selectedPhoto.type||'application/octet-stream'},
+      body:blob
+    });
+    if(!response.ok)throw new Error('Upload failed: '+response.status);
+    $('uploadStatus').textContent='Photo sent successfully 💗 Thank you!';
+    button.textContent='Sent 💌';
+  }catch{
+    $('uploadStatus').textContent='Photo did not send 🥺 Please try again and check the server logs.';
+    button.disabled=false;button.textContent='Try again 💌';
+  }
+});
+$('cancelUpload').addEventListener('click',()=>{
+  selectedPhoto=null;$('file').value='';$('uploadArea').hidden=true;
+  $('preview').style.display='none';$('uploadStatus').textContent='';
+  if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=null;
+});
 </script>
 </body>
 </html>
